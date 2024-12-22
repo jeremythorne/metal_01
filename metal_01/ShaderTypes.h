@@ -43,6 +43,7 @@ typedef struct
 {
     matrix_float4x4 projectionMatrix;
     matrix_float4x4 modelViewMatrix;
+    float time;
 } Uniforms;
 
 #endif /* ShaderTypes_h */
