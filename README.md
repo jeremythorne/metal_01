@@ -6,9 +6,9 @@ mostly a clone of [Nathan Gardon's recreation of the ocean in
 Zelda The Wind Waker](https://medium.com/@gordonnl/the-ocean-170fdfd659f1)
 with some added fog.
 
-![ocean][ocaen.png]
+![ocean](ocean.png)
 
-grass
+grass (unfinished)
 
 generated in a mesh shader
 
