@@ -21,11 +21,39 @@ typedef NSInteger EnumBackingType;
 
 #include <simd/simd.h>
 
+#ifdef __METAL_VERSION__
+#define CONSTANT constant const constexpr
+#else
+#define CONSTANT static const
+#endif
+
+CONSTANT unsigned int NUM_QUADS_PER_SHAPE = 4;
+CONSTANT unsigned int NUM_VERTS_PER_QUAD = 6;
+CONSTANT unsigned int NUM_PRIMS_PER_SHAPE = NUM_QUADS_PER_SHAPE * 2;
+CONSTANT unsigned int NUM_SHAPES_X                    = 64;
+CONSTANT unsigned int NUM_SHAPES_Y                    = 64;
+CONSTANT unsigned int NUM_SHAPES                      = (NUM_SHAPES_X * NUM_SHAPES_Y);
+CONSTANT unsigned int NUM_VERTICES_PER_SHAPE              = NUM_VERTS_PER_QUAD * NUM_QUADS_PER_SHAPE;
+
+CONSTANT unsigned int OBJECT_THREADS_PER_THREADGROUP      = 1;
+
+CONSTANT unsigned int MESH_THREADS_PER_THREADGROUP_POW2   = 3;
+CONSTANT unsigned int MESH_THREADS_PER_THREADGROUP        = (1 << MESH_THREADS_PER_THREADGROUP_POW2);
+CONSTANT unsigned int MESH_THREADS_PER_THREADGROUP_MASK   = (MESH_THREADS_PER_THREADGROUP - 1);
+CONSTANT unsigned int FIRST_TP_OF_LAST_THREADGROUP        = (MESH_THREADS_PER_THREADGROUP * (NUM_SHAPES / MESH_THREADS_PER_THREADGROUP));
+CONSTANT unsigned int NUM_PRIMITIVES_OF_LAST_THREADGROUP  = (NUM_SHAPES - FIRST_TP_OF_LAST_THREADGROUP) * NUM_PRIMS_PER_SHAPE;
+CONSTANT unsigned int MAX_VERTICES_PER_THREADGROUP        = NUM_VERTICES_PER_SHAPE * MESH_THREADS_PER_THREADGROUP;
+CONSTANT unsigned int MAX_PRIMITIVES_PER_THREADGROUP      = MESH_THREADS_PER_THREADGROUP * NUM_PRIMS_PER_SHAPE;
+
+CONSTANT unsigned int THREADGROUPS_PER_MESHGRID           = (NUM_SHAPES + MESH_THREADS_PER_THREADGROUP_MASK) / MESH_THREADS_PER_THREADGROUP;
+
+
 typedef NS_ENUM(EnumBackingType, BufferIndex)
 {
     BufferIndexMeshPositions = 0,
     BufferIndexMeshGenerics  = 1,
-    BufferIndexUniforms      = 2
+    BufferIndexUniforms      = 2,
+    BufferIndexMeshBytes     = 3,
 };
 
 typedef NS_ENUM(EnumBackingType, VertexAttribute)
