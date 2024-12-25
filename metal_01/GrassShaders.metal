@@ -42,6 +42,7 @@ struct Blade {
 struct VertexData {
     float4 position [[position]];
     float3 normal;
+    float2 uv;
 };
 
 struct PrimitiveData {
@@ -77,6 +78,17 @@ Blade create_blade(uint tid, float3 origin) {
     };
 }
 
+static float compound_sin(float x, float t, float3 scale_x, float3 scale_t) {
+    return sin(x * scale_x.x + t * scale_t.x) +
+        sin(x * scale_x.y + t * scale_t.y) +
+    sin(x * scale_x.z + t * scale_t.z) / 3.0;
+}
+
+float3 terrain(float3 position, float time) {
+    position.y += 0.5 * compound_sin(position.x, time, float3(0.1, 0.23, 0.33), float3(1.0, 1.5, 0.4));
+    position.y += 0.5 * compound_sin(position.z, time, float3(0.02, 0.18, 0.28), float3(1.8, 1.8, 0.8));
+    return position;
+}
 
 float3 transform_normal(float4x4 m, float3 v) {
     float3x3 m3(m[0].xyz, m[1].xyz, m[2].xyz);
@@ -93,20 +105,20 @@ void add_quad(thread VertexData *vertices, thread int &index, float4x4 m0, float
     float3 vd = scale3 * (float3){ 0.5f, 1.0f, 0.0f};
     float3 normal = transform_normal(m0, (float3){ 0.0f, 0.0f, 1.0f});
 
-    // float2 ta = tex_off + ((float2){0.0f, 0.0f} * tex_scale);
-    // float2 tb = tex_off + ((float2){1.0f, 0.0f} * tex_scale);
-    // float2 tc = tex_off + ((float2){0.0f, 1.0f} * tex_scale);
-    // float2 td = tex_off + ((float2){1.0f, 1.0f} * tex_scale);
+    float2 ta = tex_off + ((float2){0.0f, 0.0f} * tex_scale);
+    float2 tb = tex_off + ((float2){1.0f, 0.0f} * tex_scale);
+    float2 tc = tex_off + ((float2){0.0f, 1.0f} * tex_scale);
+    float2 td = tex_off + ((float2){1.0f, 1.0f} * tex_scale);
  
     //vertex_t v0 =  (vertex_t) {transform(m0, va), normal, colour, ta, density};
     //vertex_t v1 =  (vertex_t) {transform(m0, vb), normal, colour, tb, density};
     //vertex_t v2 =  (vertex_t) {transform(m0, vc), normal, colour, tc, density};
     //vertex_t v3 =  (vertex_t) {transform(m0, vd), normal, colour, td, density};
 
-    VertexData v0 = {m0 * float4(va, 1.0), normal};
-    VertexData v1 = {m0 * float4(vb, 1.0), normal};
-    VertexData v2 = {m0 * float4(vc, 1.0), normal};
-    VertexData v3 = {m0 * float4(vd, 1.0), normal};
+    VertexData v0 = {m0 * float4(va, 1.0), normal, ta};
+    VertexData v1 = {m0 * float4(vb, 1.0), normal, tb};
+    VertexData v2 = {m0 * float4(vc, 1.0), normal, tc};
+    VertexData v3 = {m0 * float4(vd, 1.0), normal, td};
     
     VertexData triangles[] = {
         v0, v1, v2,
@@ -181,7 +193,8 @@ void grass_mesh_shader(Mesh m,
         uchar i = uchar(tid_in_group * NUM_VERTICES_PER_SHAPE);
         uchar p = uchar(tid_in_group * NUM_PRIMS_PER_SHAPE);
 
-        Blade blade = create_blade(tp_in_grid, float3(translate.x, 0.0, translate.y));
+        float3 pos = terrain(float3(translate.x, 0.0, translate.y), 0.0);
+        Blade blade = create_blade(tp_in_grid, pos);
         VertexData vertices[NUM_VERTICES_PER_SHAPE];
         add_quads(blade, vertices);
         for (unsigned int j = 0; j < NUM_VERTICES_PER_SHAPE; j++) {
@@ -203,13 +216,20 @@ struct FragmentIn {
 };
 
 [[fragment]]
-half4 grass_fragment_shader(FragmentIn in [[stage_in]]) {
+half4 grass_fragment_shader(FragmentIn in [[stage_in]],
+                            texture2d<half> colorMap     [[ texture(TextureIndexColor) ]]) {
+   
+    constexpr sampler colorSampler(mip_filter::linear,
+                                   mag_filter::linear,
+                                   min_filter::linear);
     
+    half4 colorSample   = colorMap.sample(colorSampler, in.v.uv);
+    if (colorSample.a < 0.5) { discard_fragment(); };
     float3 light_dir = {0.5, -0.5, 0.0};
-    float3 light_colour = {0.9, 0.9, 0.7};
-    float3 ambient_colour = {0.2, 0.2, 0.2};
+    float3 light_colour = {1.9, 1.9, 1.7};
+    float3 ambient_colour = {1.2, 1.2, 1.2};
     float lambert = saturate(dot(light_dir, in.v.normal));
     float3 frag_color = in.primitive.color * lambert * light_colour + ambient_colour;
-    
-    return half4(half3(frag_color), 1);
+    return colorSample * half4(half3(frag_color), 1);
+    //return colorSample;
 }

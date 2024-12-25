@@ -82,7 +82,7 @@ class GrassRenderer: NSObject, MTKViewDelegate {
 
         do {
             colorMap = try GrassRenderer.loadTexture(
-                device: device, textureName: "ColorMap")
+                device: device, textureName: "Leaf")
         } catch {
             print("Unable to load texture. Error info: \(error)")
             return nil
@@ -118,6 +118,16 @@ class GrassRenderer: NSObject, MTKViewDelegate {
             metalKitView.depthStencilPixelFormat
         pipelineDescriptor.stencilAttachmentPixelFormat =
             metalKitView.depthStencilPixelFormat
+        
+        if let colorAtt = pipelineDescriptor.colorAttachments[0] {
+            colorAtt.isBlendingEnabled = true
+            colorAtt.rgbBlendOperation = MTLBlendOperation.add
+            colorAtt.alphaBlendOperation = MTLBlendOperation.add
+            colorAtt.sourceRGBBlendFactor = MTLBlendFactor.sourceAlpha
+            colorAtt.sourceAlphaBlendFactor = MTLBlendFactor.sourceAlpha
+            colorAtt.destinationRGBBlendFactor = MTLBlendFactor.oneMinusSourceAlpha
+            colorAtt.destinationAlphaBlendFactor = MTLBlendFactor.oneMinusSourceAlpha
+        }
 
         return try device.makeRenderPipelineState (
             descriptor: pipelineDescriptor, options: MTLPipelineOption())
@@ -221,7 +231,8 @@ class GrassRenderer: NSObject, MTKViewDelegate {
                     renderEncoder.setFragmentBuffer(
                         dynamicUniformBuffer, offset: uniformBufferOffset,
                         index: BufferIndex.uniforms.rawValue)
-                    
+                    renderEncoder.setFragmentTexture(
+                        colorMap, index: TextureIndex.color.rawValue)
                     for i in 0..<5 {
                         for j in 0...5 {
                             var offset = vector_float2(Float(i) * 16.0 - 8.0, Float(j) * 16.0 - 8.0);
