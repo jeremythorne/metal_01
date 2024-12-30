@@ -21,3 +21,13 @@ but without any of the LOD system described there.
 
 ![grass](grass.png)
 
+house
+---
+
+load and render obj model with shadoew mapping
+
+using MDLAsset to load obj model and matrix Math from 
+https://github.com/SamoZ256/MetalTutorial/blob/main/MetalTutorial9/MetalTutorial/Math.swift
+results in inverted x-values, so model matrix flips them back again
+
+![house](house.png)

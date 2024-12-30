@@ -25,6 +25,7 @@ class Renderer: NSObject, MTKViewDelegate {
     public let device: MTLDevice
     let commandQueue: MTLCommandQueue
     
+    let houseRenderer: HouseRenderer
     let oceanRenderer: OceanRenderer
     let grassRenderer: GrassRenderer
     
@@ -65,6 +66,7 @@ class Renderer: NSObject, MTKViewDelegate {
         metalKitView.colorPixelFormat = MTLPixelFormat.bgra8Unorm_srgb
         metalKitView.sampleCount = 1
         
+        houseRenderer = HouseRenderer(metalKitView: metalKitView)!
         oceanRenderer = OceanRenderer(metalKitView: metalKitView)!
         grassRenderer = GrassRenderer(metalKitView: metalKitView)!
 
@@ -97,9 +99,16 @@ class Renderer: NSObject, MTKViewDelegate {
         uniforms[0].time = frame / 60.0
 
         let rotationAxis = vector_float3(0, 1, 0)
+        
+        // with the lookat / perspective matrices we're using, obj models loaded
+        // via MDLAsset are flipped on the xaxis, so flip back here
+        
         let modelMatrix = matrix4x4_rotation(
-            radians: rotation, axis: rotationAxis)
-        let viewMatrix = matrix4x4_translation(0.0, -2.0, -8.0)
+            radians: rotation, axis: rotationAxis) * matrix4x4_scale(scale: vector_float3(-1, 1, 1))
+        let viewMatrix = createViewMatrix(eyePosition: vector_float3(0, 2, -8), targetPosition: vector_float3(0, 2, 0),
+                                           upVec: vector_float3(0, 1, 0))
+        uniforms[0].modelMatrix = modelMatrix
+        uniforms[0].viewMatrix = viewMatrix
         uniforms[0].modelViewMatrix = simd_mul(viewMatrix, modelMatrix)
         rotation += 0.01
         frame += 1
@@ -121,13 +130,39 @@ class Renderer: NSObject, MTKViewDelegate {
 
             self.updateGameState()
 
-            let demo_index = (Int(frame) / (60 * 30)) % 2
+            let demo_index = (Int(frame) / (60 * 30)) % 3
+            if demo_index == 0 {
+                if let renderPassDescriptor = houseRenderer.shadow_render_pass_descriptor() {
+                    if let renderEncoder = commandBuffer.makeRenderCommandEncoder(
+                        descriptor: renderPassDescriptor)
+                    {
+                        renderEncoder.setCullMode(.back)
+                        renderEncoder.setFrontFacing(.counterClockwise)
+                        renderEncoder.setDepthStencilState(depthState)
+                        renderEncoder.setVertexBuffer(
+                            dynamicUniformBuffer, offset: uniformBufferOffset,
+                            index: BufferIndex.uniforms.rawValue)
+                        renderEncoder.setFragmentBuffer(
+                            dynamicUniformBuffer, offset: uniformBufferOffset,
+                            index: BufferIndex.uniforms.rawValue)
+                        renderEncoder.setMeshBuffer(
+                            dynamicUniformBuffer, offset: uniformBufferOffset,
+                            index: BufferIndex.uniforms.rawValue)
+                        
+                        houseRenderer.draw_shadow(renderEncoder: renderEncoder)
+                        renderEncoder.endEncoding()
+                    }
+                }
+            }
+            
             /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
             ///   holding onto the drawable and blocking the display pipeline any longer than necessary
             let renderPassDescriptor = view.currentRenderPassDescriptor
 
             let clearColor = switch(demo_index) {
             case 0:
+                houseRenderer.clearColor()
+            case 1:
                 oceanRenderer.clearColor()
             default:
                 grassRenderer.clearColor()
@@ -161,6 +196,8 @@ class Renderer: NSObject, MTKViewDelegate {
                     
                     switch demo_index {
                     case 0:
+                        houseRenderer.draw(in: view, renderEncoder: renderEncoder)
+                    case 1:
                         oceanRenderer.draw(in: view, renderEncoder: renderEncoder)
                     default:
                         grassRenderer.draw(in: view, renderEncoder: renderEncoder)
@@ -183,9 +220,9 @@ class Renderer: NSObject, MTKViewDelegate {
         /// Respond to drawable size or orientation changes here
 
         let aspect = Float(size.width) / Float(size.height)
-        projectionMatrix = matrix_perspective_right_hand(
-            fovyRadians: radians_from_degrees(65), aspectRatio: aspect,
-            nearZ: 0.1, farZ: 100.0)
+
+        projectionMatrix = createPerspectiveMatrix(fov:  toRadians(from: 65), aspectRatio: aspect, nearPlane: 0.1, farPlane: 100)
+        //projectionMatrix = createOrthographicProjection(-5, 5, -5, 5, 1, 20)
     }
 }
 

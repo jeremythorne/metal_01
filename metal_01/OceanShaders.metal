@@ -71,7 +71,7 @@ fragment float4 fragmentShader(ColorInOut in [[stage_in]],
     uv.y += 0.12 * compound_sin(uv.x, uniforms.time, float3(4.2, 6.3, 8.2), float3(0.64, 1.65, 0.45));
     half4 colorSample   = colorMap.sample(colorSampler, uv);
 
-    float fog = 1.0 - exp(in.viewpos.z / 20);
+    float fog = saturate(1.0 - exp(-in.viewpos.z / 20));
     float4 fog_color = float4(0.6, 0.6, 0.8, 1.0);
     return mix(float4(colorSample), fog_color, fog);
 }

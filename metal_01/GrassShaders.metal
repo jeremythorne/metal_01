@@ -162,8 +162,6 @@ void add_quads(const Blade blade, thread VertexData *vertices) {
             
         axes_from_dir_up(velocity, direction, &x, &y, &z);
         float4x4 m0(float4(x, 0.0), float4(y, 0.0), float4(z, 0.0), float4(origin, 1.0));
-        //float4x4 m0(1.0);
-        //m0[3] = float4(origin, 1.0);
         float len = length(velocity);
         float2 tex_off = (float2){0.0f, i/Nf};
         float2 tex_scale = (float2){1.0f, 1.0f/Nf};
@@ -231,5 +229,4 @@ half4 grass_fragment_shader(FragmentIn in [[stage_in]],
     float lambert = saturate(dot(light_dir, in.v.normal));
     float3 frag_color = in.primitive.color * lambert * light_colour + ambient_colour;
     return colorSample * half4(half3(frag_color), 1);
-    //return colorSample;
 }
