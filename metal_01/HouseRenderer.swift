@@ -59,7 +59,7 @@ class ShadowLight {
 }
 
 
-class HouseRenderer {
+class HouseRenderer: Demo {
 
     public let device: MTLDevice
     var pipelineState: MTLRenderPipelineState
@@ -69,8 +69,8 @@ class HouseRenderer {
     var mesh: MTKMesh
 
     @MainActor
-    init?(metalKitView: MTKView) {
-        self.device = metalKitView.device!
+    override init?(metalKitView: MTKView, device: MTLDevice) {
+        self.device = device
 
         shadow_light = ShadowLight(device: device, light_direction: -vector_float3(8, 8, -8))
         shadow_light.calc_matrices()
@@ -120,7 +120,7 @@ class HouseRenderer {
             return nil
         }
         
-
+        super.init(metalKitView: metalKitView, device: device)
     }
 
     class func buildMetalVertexDescriptor() -> MTLVertexDescriptor {
@@ -290,15 +290,15 @@ class HouseRenderer {
 
     }
 
-    func clearColor() -> MTLClearColor {
+    override func clear_color() -> MTLClearColor {
         return MTLClearColorMake(0.6, 0.6, 0.8, 1.0);
     }
    
-    func shadow_render_pass_descriptor() -> MTLRenderPassDescriptor? {
+    override func shadow_render_pass_descriptor() -> MTLRenderPassDescriptor? {
         return shadow_light.render_pass_descriptor
     }
     
-    func draw_shadow(renderEncoder: MTLRenderCommandEncoder) {
+    override func draw_shadow(renderEncoder: MTLRenderCommandEncoder) {
         renderEncoder.setRenderPipelineState(shadowPipeline)
         for (index, element) in mesh.vertexDescriptor.layouts
             .enumerated()
@@ -332,7 +332,7 @@ class HouseRenderer {
         }
     }
     
-    func draw(in view: MTKView, renderEncoder: MTLRenderCommandEncoder) {
+    override func draw_main(renderEncoder: MTLRenderCommandEncoder) {
         /// Per frame updates hare
         renderEncoder.setRenderPipelineState(pipelineState)
 

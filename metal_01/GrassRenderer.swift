@@ -15,15 +15,15 @@ enum GrassRendererError: Error {
     case badVertexDescriptor
 }
 
-class GrassRenderer {
+class GrassRenderer: Demo {
 
     public let device: MTLDevice
     var pipelineState: MTLRenderPipelineState
     var colorMap: MTLTexture
 
     @MainActor
-    init?(metalKitView: MTKView) {
-        self.device = metalKitView.device!
+    override init?(metalKitView: MTKView, device: MTLDevice) {
+        self.device = device
 
         do {
             (self.pipelineState, _) = try GrassRenderer.buildRenderPipelineWithDevice(
@@ -43,6 +43,7 @@ class GrassRenderer {
             print("Unable to load texture. Error info: \(error)")
             return nil
         }
+        super.init(metalKitView: metalKitView, device: device)
     }
 
     @MainActor
@@ -109,11 +110,11 @@ class GrassRenderer {
 
     }
 
-    func clearColor() -> MTLClearColor {
+    override func clear_color() -> MTLClearColor {
         return MTLClearColorMake(0.0, 0.1, 0.0, 1.0);
     }
     
-    func draw(in view: MTKView, renderEncoder: MTLRenderCommandEncoder) {
+    override func draw_main(renderEncoder: MTLRenderCommandEncoder) {
         /// Per frame updates hare
                 
         renderEncoder.setRenderPipelineState(pipelineState)

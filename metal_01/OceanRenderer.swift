@@ -20,7 +20,7 @@ enum OceanRendererError: Error {
     case badVertexDescriptor
 }
 
-class OceanRenderer {
+class OceanRenderer: Demo {
 
     public let device: MTLDevice
     var pipelineState: MTLRenderPipelineState
@@ -29,8 +29,8 @@ class OceanRenderer {
     var mesh: MTKMesh
 
     @MainActor
-    init?(metalKitView: MTKView) {
-        self.device = metalKitView.device!
+    override init?(metalKitView: MTKView, device: MTLDevice) {
+        self.device = device
 
         let mtlVertexDescriptor = OceanRenderer.buildMetalVertexDescriptor()
 
@@ -61,6 +61,7 @@ class OceanRenderer {
             print("Unable to load texture. Error info: \(error)")
             return nil
         }
+        super.init(metalKitView: metalKitView, device: device)
     }
 
     class func buildMetalVertexDescriptor() -> MTLVertexDescriptor {
@@ -182,11 +183,11 @@ class OceanRenderer {
 
     }
 
-    func clearColor() -> MTLClearColor {
+    override func clear_color() -> MTLClearColor {
         return MTLClearColorMake(0.6, 0.6, 0.8, 1.0);
     }
     
-    func draw(in view: MTKView, renderEncoder: MTLRenderCommandEncoder) {
+    override func draw_main(renderEncoder: MTLRenderCommandEncoder) {
         /// Per frame updates hare
         renderEncoder.setRenderPipelineState(pipelineState)
 
