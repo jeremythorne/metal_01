@@ -47,6 +47,9 @@ CONSTANT unsigned int MAX_PRIMITIVES_PER_THREADGROUP      = MESH_THREADS_PER_THR
 
 CONSTANT unsigned int THREADGROUPS_PER_MESHGRID           = (NUM_SHAPES + MESH_THREADS_PER_THREADGROUP_MASK) / MESH_THREADS_PER_THREADGROUP;
 
+CONSTANT unsigned int NUM_NOISE_SAMPLES = 16;
+CONSTANT unsigned int NUM_SSAO_SAMPLES = 8;
+
 
 typedef NS_ENUM(EnumBackingType, BufferIndex)
 {
@@ -55,6 +58,8 @@ typedef NS_ENUM(EnumBackingType, BufferIndex)
     BufferIndexUniforms      = 2,
     BufferIndexMeshBytes     = 3,
     BufferIndexShadowLight   = 4,
+    BufferIndexNoise         = 5,
+    BufferIndexSSAOSamples   = 6
 };
 
 typedef NS_ENUM(EnumBackingType, VertexAttribute)
@@ -68,6 +73,8 @@ typedef NS_ENUM(EnumBackingType, TextureIndex)
 {
     TextureIndexColor     = 0,
     TextureIndexShadowMap = 1,
+    TextureIndexDepthMap = 2,
+    TextureIndexNormalMap = 3,
 };
 
 typedef struct
@@ -77,6 +84,7 @@ typedef struct
     matrix_float4x4 viewMatrix;
     matrix_float4x4 modelViewMatrix;
     float time;
+    vector_float2 screenSize;
 } Uniforms;
 
 typedef struct {

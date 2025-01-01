@@ -24,10 +24,19 @@ but without any of the LOD system described there.
 house
 ---
 
-load and render obj model with shadoew mapping
+load and render obj model with shadow mapping
 
 using MDLAsset to load obj model and matrix Math from 
 https://github.com/SamoZ256/MetalTutorial/blob/main/MetalTutorial9/MetalTutorial/Math.swift
 results in inverted x-values, so model matrix flips them back again
 
 ![house](house.png)
+
+Screen Space Ambient Occlusion
+
+render depth and normal to texture
+then in a screen space pass, reconstruct view position and normal, take samples in a hemisphere around the normal and compare with the recorded depth.
+
+finally apply a screen space edge preserving blur (Kuwahara filter)
+
+![ssao](ssao.png)

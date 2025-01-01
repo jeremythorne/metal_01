@@ -74,7 +74,6 @@ class HouseRenderer: Demo {
 
         shadow_light = ShadowLight(device: device, light_direction: -vector_float3(8, 8, -8))
         shadow_light.calc_matrices()
-
         
         let mtlVertexDescriptor = HouseRenderer.buildMetalVertexDescriptor()
 
@@ -293,12 +292,21 @@ class HouseRenderer: Demo {
     override func clear_color() -> MTLClearColor {
         return MTLClearColorMake(0.6, 0.6, 0.8, 1.0);
     }
-   
-    override func shadow_render_pass_descriptor() -> MTLRenderPassDescriptor? {
-        return shadow_light.render_pass_descriptor
+  
+    override func render_pass_descriptor(index: Int) -> MTLRenderPassDescriptor? {
+        switch index {
+        case 0:
+            return shadow_light.render_pass_descriptor
+        default:
+            return nil
+        }
     }
     
-    override func draw_shadow(renderEncoder: MTLRenderCommandEncoder) {
+    override func draw_pass(renderEncoder: MTLRenderCommandEncoder, index: Int) {
+        if index > 0 {
+            return;
+        }
+        renderEncoder.setDepthStencilState(depthState)
         renderEncoder.setRenderPipelineState(shadowPipeline)
         for (index, element) in mesh.vertexDescriptor.layouts
             .enumerated()

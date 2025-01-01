@@ -27,6 +27,8 @@ class State {
     var uniforms: UnsafeMutablePointer<Uniforms>
     var projectionMatrix: matrix_float4x4 = matrix_float4x4()
     var rotation: Float = 0
+    var width: Float = 0
+    var height: Float = 0
     public var frame: Float = 0
     
     init?(device: MTLDevice) {
@@ -60,6 +62,7 @@ class State {
         uniforms[0].modelMatrix = modelMatrix
         uniforms[0].viewMatrix = viewMatrix
         uniforms[0].modelViewMatrix = simd_mul(viewMatrix, modelMatrix)
+        uniforms[0].screenSize = vector_float2(width, height)
         rotation += 0.01
         frame += 1
     }
@@ -76,11 +79,14 @@ class State {
         ).bindMemory(to: Uniforms.self, capacity: 1)
     }
 
-    public func updateAspect(aspect: Float) {
+    public func updateSize(width: Float, height: Float) {
+        let aspect = width / height
         projectionMatrix = createPerspectiveMatrix(fov:  toRadians(from: 65),
                                                    aspectRatio: aspect,
                                                    nearPlane: 0.1,
                                                    farPlane: 100)
+        self.width = width
+        self.height = height
         //projectionMatrix = createOrthographicProjection(-5, 5, -5, 5, 1, 20)
     }
     
@@ -99,7 +105,7 @@ class State {
 
 class Demo {
     var depthState: MTLDepthStencilState
-
+    
     @MainActor
     init?(metalKitView: MTKView, device: MTLDevice) {
         let depthStateDescriptor = MTLDepthStencilDescriptor()
@@ -110,19 +116,21 @@ class Demo {
     }
     
     public func draw(in view: MTKView, commandBuffer: MTLCommandBuffer, state: State) {
-        if let renderPassDescriptor = shadow_render_pass_descriptor() {
+        var index = 0
+        while let passDescriptor = render_pass_descriptor(index:index) {
             if let renderEncoder = commandBuffer.makeRenderCommandEncoder(
-                descriptor: renderPassDescriptor)
+                descriptor: passDescriptor)
             {
                 renderEncoder.setCullMode(.back)
                 renderEncoder.setFrontFacing(.counterClockwise)
-                renderEncoder.setDepthStencilState(depthState)
                 state.setUniforms(renderEncoder: renderEncoder)
                 
-                draw_shadow(renderEncoder: renderEncoder)
+                draw_pass(renderEncoder: renderEncoder, index: index)
+                index += 1
                 renderEncoder.endEncoding()
             }
         }
+
         /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
         ///   holding onto the drawable and blocking the display pipeline any longer than necessary
         let renderPassDescriptor = view.currentRenderPassDescriptor
@@ -148,19 +156,22 @@ class Demo {
              }
         }
     }
-
-    func shadow_render_pass_descriptor() -> MTLRenderPassDescriptor? {
-        return nil
-    }
-
+    
     func clear_color() -> MTLClearColor {
         return MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
     }
 
-    func draw_shadow(renderEncoder: MTLRenderCommandEncoder) {
+    func render_pass_descriptor(index: Int) -> MTLRenderPassDescriptor? {
+        return nil
     }
-
+    
+    func draw_pass(renderEncoder: MTLRenderCommandEncoder, index: Int) {
+    }
+    
     func draw_main(renderEncoder: MTLRenderCommandEncoder) {
+    }
+    
+    func update_size(width: Float, height: Float) {
     }
 }
 
@@ -185,11 +196,12 @@ class Renderer: NSObject, MTKViewDelegate {
         metalKitView.colorPixelFormat = MTLPixelFormat.bgra8Unorm_srgb
         metalKitView.sampleCount = 1
         
-        let houseRenderer = HouseRenderer(metalKitView: metalKitView, device: device)!
-        let oceanRenderer = OceanRenderer(metalKitView: metalKitView, device: device)!
-        let grassRenderer = GrassRenderer(metalKitView: metalKitView, device: device)!
+        let ssao = SSAORenderer(metalKitView: metalKitView, device: device)!
+        let house = HouseRenderer(metalKitView: metalKitView, device: device)!
+        let ocean = OceanRenderer(metalKitView: metalKitView, device: device)!
+        let grass = GrassRenderer(metalKitView: metalKitView, device: device)!
        
-        demos = [houseRenderer, oceanRenderer, grassRenderer]
+        demos = [ssao, house, ocean, grass]
 
         state = State(device:device)!
         
@@ -224,8 +236,10 @@ class Renderer: NSObject, MTKViewDelegate {
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         /// Respond to drawable size or orientation changes here
-        let aspect = Float(size.width) / Float(size.height)
-        state.updateAspect(aspect: aspect)
+        state.updateSize(width: Float(size.width), height: Float(size.height))
+        for demo in demos {
+            demo.update_size(width: Float(size.width), height: Float(size.height))
+        }
     }
 }
 
