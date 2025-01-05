@@ -102,7 +102,9 @@ fragment float4 SSAOFragmentShader(ScreenSpace in [[stage_in]],
     float2 uv = (in.screenpos.xy / in.screenpos.w + 1) / 2;
     uv.y = 1 - uv.y;
     float3 normalSample = normalMap.sample(normalSampler, uv).rgb;
-    float3 normal = normalize(float3(normalSample.rg, sqrt(1 - length_squared(normalSample.rg))));
+    // normal.z is negative (i.e. towards camera)
+    float3 normal = normalize(float3(normalSample.rg,
+                                     -sqrt(1 - length_squared(normalSample.rg))));
     float depth = normalSample.b;
     float3 viewpos(in.viewpos.xy * depth, depth);
     
@@ -131,7 +133,9 @@ fragment float4 SSAOFragmentShader(ScreenSpace in [[stage_in]],
         
         // fetch the depth at the new screen space coord and compare to our sample
         float sampleDepth = normalMap.sample(normalSampler, sampleUV.xy).b;
-        float occluded = select(0, 1, samplePosition.z + bias <= sampleDepth);
+        // depth increases with distance from the camera, so sample is not
+        // occluded (occlued = 0) if samplePosition.z is less than sampledepth
+        float occluded = select(1, 0, samplePosition.z - bias <= sampleDepth);
         occluded *= smoothstep(0, 1, radius / abs(samplePosition.z - sampleDepth));
         // accumulate the occlusion
         occlusion -= occluded;
