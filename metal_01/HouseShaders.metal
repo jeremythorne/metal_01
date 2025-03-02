@@ -98,7 +98,7 @@ fragment float4 houseFragmentShader(ColorInOut in [[stage_in]],
     float3 light_colour = {1.9, 1.9, 1.7};
     float3 ambient_colour = float3(0.6, 0.6, 0.8) / 4;
     
-    float3 V = normalize(float(0) - in.viewpos.xyz / in.viewpos.w);
+    //float3 V = normalize(float(0) - in.viewpos.xyz / in.viewpos.w);
     float3 N = in.normal;
     float3 L = normalize(light_dir);
     float NdotL = dot(N, L);

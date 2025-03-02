@@ -1,13 +1,37 @@
 first real time rendering projects in Apple's Metal
 
-a rolling sea
----
-    
-mostly a clone of [Nathan Gardon's recreation of the ocean in
-Zelda The Wind Waker](https://medium.com/@gordonnl/the-ocean-170fdfd659f1)
-with some added fog.
+newest projects at the top
 
-![ocean](ocean.png)
+Image based lighting
+---
+
+load hdr file and convert to cube map
+convolve cube map to create diffuse irradiance
+follows https://learnopengl.com/PBR/IBL/Diffuse-irradiance
+
+![ibl](hdri.png)
+
+
+Screen Space Ambient Occlusion
+---
+
+render depth and normal to texture
+then in a screen space pass, reconstruct view position and normal, take samples in a hemisphere around the normal and compare with the recorded depth.
+
+finally apply a screen space edge preserving blur (Kuwahara filter)
+
+![ssao](ssao.png)
+
+house
+---
+
+load and render obj model with shadow mapping
+
+using MDLAsset to load obj model and matrix Math from 
+https://github.com/SamoZ256/MetalTutorial/blob/main/MetalTutorial9/MetalTutorial/Math.swift
+results in inverted x-values, so model matrix flips them back again
+
+![house](house.png)
 
 grass
 ---
@@ -21,22 +45,13 @@ but without any of the LOD system described there.
 
 ![grass](grass.png)
 
-house
+a rolling sea
 ---
+    
+mostly a clone of [Nathan Gardon's recreation of the ocean in
+Zelda The Wind Waker](https://medium.com/@gordonnl/the-ocean-170fdfd659f1)
+with some added fog.
 
-load and render obj model with shadow mapping
+![ocean](ocean.png)
 
-using MDLAsset to load obj model and matrix Math from 
-https://github.com/SamoZ256/MetalTutorial/blob/main/MetalTutorial9/MetalTutorial/Math.swift
-results in inverted x-values, so model matrix flips them back again
 
-![house](house.png)
-
-Screen Space Ambient Occlusion
-
-render depth and normal to texture
-then in a screen space pass, reconstruct view position and normal, take samples in a hemisphere around the normal and compare with the recorded depth.
-
-finally apply a screen space edge preserving blur (Kuwahara filter)
-
-![ssao](ssao.png)

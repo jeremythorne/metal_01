@@ -196,12 +196,13 @@ class Renderer: NSObject, MTKViewDelegate {
         metalKitView.colorPixelFormat = MTLPixelFormat.bgra8Unorm_srgb
         metalKitView.sampleCount = 1
         
+        let env = EnvRenderer(metalKitView: metalKitView, device: device)!
         let ssao = SSAORenderer(metalKitView: metalKitView, device: device)!
         let house = HouseRenderer(metalKitView: metalKitView, device: device)!
         let ocean = OceanRenderer(metalKitView: metalKitView, device: device)!
         let grass = GrassRenderer(metalKitView: metalKitView, device: device)!
        
-        demos = [ssao, house, ocean, grass]
+        demos = [env, ssao, house, ocean, grass]
 
         state = State(device:device)!
         

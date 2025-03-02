@@ -118,7 +118,7 @@ fragment float4 SSAOFragmentShader(ScreenSpace in [[stage_in]],
     float3 tangent  = normalize(random - normal * dot(random, normal));
     float3 binormal = cross(normal, tangent);
     matrix_float3x3 tbn  = matrix_float3x3(tangent, binormal, normal);
-
+    
     float occlusion = NUM_SSAO_SAMPLES;
 
     for (unsigned int i = 0; i < NUM_SSAO_SAMPLES; ++i) {
